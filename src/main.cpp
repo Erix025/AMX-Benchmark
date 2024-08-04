@@ -5,14 +5,14 @@
 // =============================================================
 /* Initialize tile config */
 #include "amx.h"
+#include "benchmark.h"
 #include "examples.h"
 #include "utils.cpp"
 /* Initialize int8_t buffer */
 
 int main() {
-  tmul_int8_uu();
-  tmul_int8_us();
-  tmul_int8_su();
-  tmul_int8_ss();
+  tload_benchmark_int8();
+  tmul_benchmark_int8_uu();
+  tstore_benchmark_int8();
   return 0;
 }
