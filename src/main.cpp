@@ -7,13 +7,11 @@
 #include "amx.h"
 #include "benchmark.h"
 #include "examples.h"
+#include "gemv.h"
 #include "utils.cpp"
 /* Initialize int8_t buffer */
 
 int main() {
-  // warm up
-  benchmark_all();
-
-  benchmark_all();
+  gemv();
   return 0;
 }
