@@ -11,8 +11,6 @@
 /* Initialize int8_t buffer */
 
 int main() {
-  tload_benchmark_int8();
-  tmul_benchmark_int8_uu();
-  tstore_benchmark_int8();
+  tmul_bf16();
   return 0;
 }
