@@ -18,6 +18,10 @@ using INT32 = int32_t;
 using BF16 = __bf16;
 using FP16 = _Float16;
 using FP32 = float;
+using COMPLEX = struct {
+  FP16 real;
+  FP16 image;
+};
 
 // Define tile config data structure
 typedef struct __tile_config {

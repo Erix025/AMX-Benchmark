@@ -11,6 +11,6 @@
 /* Initialize int8_t buffer */
 
 int main() {
-  tmul_bf16();
+  tmul_complex();
   return 0;
 }
