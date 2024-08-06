@@ -11,6 +11,9 @@
 /* Initialize int8_t buffer */
 
 int main() {
-  tmul_complex();
+  // warm up
+  benchmark_all();
+
+  benchmark_all();
   return 0;
 }
