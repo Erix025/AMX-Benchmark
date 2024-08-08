@@ -103,9 +103,9 @@ void gemv_naive(const int M, const int N, const BF16* A, const BF16* x,
     corner_config.colsb[2] = 4;
   }
 
-  _tile_loadconfig(&default_config);
   int i, j;
   for (i = 0; i <= M - 16; i += 16) {
+    _tile_loadconfig(&default_config);
     _tile_loadd(0, y + i, sizeof(FP32));
     for (j = 0; j <= N - 32; j += 32) {
       _tile_loadd(1, A + i * N + j, sizeof(BF16) * N);

@@ -6,6 +6,11 @@
 #include "amx.h"
 
 template <typename T>
+inline T max(T a, T b) {
+  return a > b ? a : b;
+}
+
+template <typename T>
 void init_buffer(T *buf, T value, int32_t rows, int32_t cols) {
   int i, j;
   for (i = 0; i < rows; i++)
@@ -56,7 +61,8 @@ void random_buffer(T *buf, int32_t rows, int32_t cols) {
 }
 
 template <typename T>
-bool compare_buffer(T *buf1, T *buf2, int32_t rows, int32_t cols, double tol) {
+bool compare_buffer_l2norm(T *buf1, T *buf2, int32_t rows, int32_t cols,
+                           double tol) {
   int i, j;
   double l2norm = 0;
   for (i = 0; i < rows; i++)
@@ -67,4 +73,17 @@ bool compare_buffer(T *buf1, T *buf2, int32_t rows, int32_t cols, double tol) {
   l2norm = sqrt(l2norm);
   std::cout << "l2norm: " << l2norm << std::endl;
   return l2norm < tol;
+}
+
+template <typename T>
+bool compare_buffer_max(T *buf1, T *buf2, int32_t rows, int32_t cols,
+                        double tol) {
+  int i, j;
+  double max_norm = 0;
+  for (i = 0; i < rows; i++)
+    for (j = 0; j < cols; j++) {
+      max_norm = max(fabs(buf1[i * cols + j] - buf2[i * cols + j]), max_norm);
+    }
+  std::cout << "max norm: " << max_norm << std::endl;
+  return max_norm < tol;
 }
