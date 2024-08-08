@@ -33,3 +33,4 @@ typedef struct __tile_config {
 } __tilecfg;
 
 bool enable_amx();
+void print_config();

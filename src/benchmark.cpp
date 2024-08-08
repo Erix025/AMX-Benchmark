@@ -457,11 +457,11 @@ void tstore_benchmark() {
 }
 
 void benchmark_all() {
-  // tstore_benchmark();
-  // tmul_benchmark_int8_uu();
-  // tmul_benchmark_int8_su();
-  // tmul_benchmark_int8_us();
-  // tmul_benchmark_int8_ss();
+  tload_benchmark();
+  tmul_benchmark_int8_uu();
+  tmul_benchmark_int8_su();
+  tmul_benchmark_int8_us();
+  tmul_benchmark_int8_ss();
   tmul_benchmark_bf16();
-  // tload_benchmark();
+  tstore_benchmark();
 }
