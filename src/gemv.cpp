@@ -1,5 +1,7 @@
 #include "gemv.h"
 
+#include <chrono>
+
 #include "amx.h"
 #include "utils.cpp"
 void gemv() {
@@ -191,4 +193,137 @@ void gemv_ref(const int M, const int N, const BF16* A, const BF16* x, FP32* y) {
     }
     y[i] = sum;
   }
+}
+
+/**
+ * Optimized gemv, which will use at most 3 tile registers to perform GEMV.
+ * Please make sure that the shape of A and x is supported.
+ */
+void gemv_optim(const int M, const int N, const BF16* A, const BF16* x,
+                FP32* y) {
+  // enable amx
+  if (!enable_amx()) exit(-1);
+  // init default config
+  __tilecfg default_config = {0};
+  {
+    default_config.palette_id = 1;
+    default_config.start_row = 0;
+    // y
+    default_config.rows[0] = 16;
+    default_config.colsb[0] = 4;
+    default_config.rows[1] = 16;
+    default_config.colsb[1] = 4;
+    // A
+    default_config.rows[2] = 16;
+    default_config.colsb[2] = 64;
+    default_config.rows[3] = 16;
+    default_config.colsb[3] = 64;
+    default_config.rows[4] = 16;
+    default_config.colsb[4] = 64;
+    default_config.rows[5] = 16;
+    default_config.colsb[5] = 64;
+    // x
+    default_config.rows[6] = 16;
+    default_config.colsb[6] = 4;
+    default_config.rows[7] = 16;
+    default_config.colsb[7] = 4;
+  }
+  int i, j;
+  _tile_loadconfig(&default_config);
+  for (i = 0; i <= M - 16 * 2; i += 16 * 2) {
+    _tile_loadd(0, y + i, sizeof(FP32));
+    _tile_loadd(1, y + i + 16, sizeof(FP32));
+    for (j = 0; j <= N - 32 * 2; j += 32 * 2) {
+      _tile_loadd(2, A + i * N + j, sizeof(BF16) * N);
+      _tile_loadd(3, A + i * N + j + 32, sizeof(BF16) * N);
+      _tile_loadd(4, A + (i + 16) * N + j, sizeof(BF16) * N);
+      _tile_loadd(5, A + (i + 16) * N + j + 32, sizeof(BF16) * N);
+      _tile_loadd(6, x + j, 2 * sizeof(BF16));
+      _tile_loadd(7, x + j + 32, 2 * sizeof(BF16));
+      _tile_dpbf16ps(0, 2, 6);
+      _tile_dpbf16ps(0, 3, 7);
+      _tile_dpbf16ps(1, 4, 6);
+      _tile_dpbf16ps(1, 5, 7);
+    }
+    _tile_stored(0, y + i, sizeof(FP32));
+    _tile_stored(1, y + i + 16, sizeof(FP32));
+  }
+}
+
+void example_gemv() {
+  int M = 10240, N = 10240;
+  int max_iter = 100;
+  BF16* A = new BF16[M * N];
+  BF16* x = new BF16[N];
+  FP32* y = new FP32[M];
+  random_buffer(A, M, N);
+  random_buffer(x, N, 1);
+  init_buffer(y, (FP32)0, M, 1);
+  gemv_optim(M, N, A, x, y);
+}
+
+void benchmark_gemv() {
+  int M = 1024, N = 1024;
+  int max_iter = 100;
+  BF16* A = new BF16[M * N];
+  BF16* x = new BF16[N];
+  FP32* y0 = new FP32[M];
+  FP32* y1 = new FP32[M];
+  FP32* y2 = new FP32[M];
+  random_buffer(A, M, N);
+  random_buffer(x, N, 1);
+  init_buffer(y0, (FP32)0, M, 1);
+  init_buffer(y1, (FP32)0, M, 1);
+  init_buffer(y2, (FP32)0, M, 1);
+
+  int ops_per_iter = M * 2 * N;
+  // compute
+  std::chrono::microseconds duration(0);
+  for (int i = 0; i < max_iter; i++) {
+    random_buffer(A, M, N);
+    random_buffer(x, N, 1);
+    init_buffer(y0, (FP32)0, M, 1);
+    auto start = std::chrono::high_resolution_clock::now();
+    gemv_ref(M, N, A, x, y0);
+    auto end = std::chrono::high_resolution_clock::now();
+    duration +=
+        std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  }
+  std::cout << "Reference version: " << duration.count() / (double)max_iter
+            << " us" << std::endl;
+  std::cout << "Throughput: "
+            << ops_per_iter / (duration.count() / (double)max_iter) / 1e3
+            << "TOPS" << std::endl;
+  duration = std::chrono::microseconds(0);
+  for (int i = 0; i < max_iter; i++) {
+    random_buffer(A, M, N);
+    random_buffer(x, N, 1);
+    init_buffer(y1, (FP32)0, M, 1);
+    auto start = std::chrono::high_resolution_clock::now();
+    gemv_naive(M, N, A, x, y1);
+    auto end = std::chrono::high_resolution_clock::now();
+    duration +=
+        std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  }
+  std::cout << "Naive version: " << duration.count() / (double)max_iter << " us"
+            << std::endl;
+  std::cout << "Throughput: "
+            << ops_per_iter / (duration.count() / (double)max_iter) / 1e3
+            << "TOPS" << std::endl;
+  duration = std::chrono::microseconds(0);
+  for (int i = 0; i < max_iter; i++) {
+    random_buffer(A, M, N);
+    random_buffer(x, N, 1);
+    init_buffer(y1, (FP32)0, M, 1);
+    auto start = std::chrono::high_resolution_clock::now();
+    gemv_naive(M, N, A, x, y1);
+    auto end = std::chrono::high_resolution_clock::now();
+    duration +=
+        std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  }
+  std::cout << "Optimized version: " << duration.count() / (double)max_iter
+            << " us" << std::endl;
+  std::cout << "Throughput: "
+            << ops_per_iter / (duration.count() / (double)max_iter) / 1e3
+            << "TOPS" << std::endl;
 }
