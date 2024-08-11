@@ -287,14 +287,10 @@ void tmul_benchmark_int8_su() {
   _tile_release();
 }
 
-void tmul_benchmark_bf16() {
+void tmul_benchmark_bf16(int M, int N, int K) {
   BF16 src1[1024 / 2];
   BF16 src2[1024 / 2];
   FP32 res[1024 / 4];
-  int M, N, K;
-  M = 16;
-  K = 16;
-  N = 16;
 
   // Request permission to linux kernel to run AMX
   if (!enable_amx()) exit(-1);
@@ -342,7 +338,8 @@ void tmul_benchmark_bf16() {
   int ops_per_iter = M * N * K * 4;
   std::chrono::duration<double> elapsed = end - start;
   std::cout << "====================\n"
-            << "Tile Multiply Benchmark (BF16)\n";
+            << "Tile Multiply Benchmark (BF16)\n"
+            << "M: " << M << " N: " << N << " K: " << K << std::endl;
   std::cout << "Elapsed time: " << elapsed.count() << " s\n";
   std::cout << "Throughput: "
             << (double)test_frequency * iter * ops_per_iter / elapsed.count() /
@@ -462,6 +459,16 @@ void benchmark_all() {
   tmul_benchmark_int8_su();
   tmul_benchmark_int8_us();
   tmul_benchmark_int8_ss();
-  tmul_benchmark_bf16();
+  tmul_benchmark_bf16(16, 16, 16);
   tstore_benchmark();
+}
+
+void benchmark_bf16_shapes() {
+  for (int i = 1; i <= 16; i++) {
+    for (int j = 1; j <= 16; j++) {
+      for (int k = 1; k <= 16; k++) {
+        tmul_benchmark_bf16(i, j, k);
+      }
+    }
+  }
 }

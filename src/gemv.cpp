@@ -292,7 +292,7 @@ void benchmark_gemv() {
   std::cout << "Reference version: " << duration.count() / (double)max_iter
             << " us" << std::endl;
   std::cout << "Throughput: "
-            << ops_per_iter / (duration.count() / (double)max_iter) / 1e3
+            << ops_per_iter / (duration.count() / (double)max_iter) / 1e6
             << "TOPS" << std::endl;
   duration = std::chrono::microseconds(0);
   for (int i = 0; i < max_iter; i++) {
@@ -308,7 +308,7 @@ void benchmark_gemv() {
   std::cout << "Naive version: " << duration.count() / (double)max_iter << " us"
             << std::endl;
   std::cout << "Throughput: "
-            << ops_per_iter / (duration.count() / (double)max_iter) / 1e3
+            << ops_per_iter / (duration.count() / (double)max_iter) / 1e6
             << "TOPS" << std::endl;
   duration = std::chrono::microseconds(0);
   for (int i = 0; i < max_iter; i++) {
@@ -324,6 +324,6 @@ void benchmark_gemv() {
   std::cout << "Optimized version: " << duration.count() / (double)max_iter
             << " us" << std::endl;
   std::cout << "Throughput: "
-            << ops_per_iter / (duration.count() / (double)max_iter) / 1e3
+            << ops_per_iter / (duration.count() / (double)max_iter) / 1e6
             << "TOPS" << std::endl;
 }
