@@ -1,6 +1,8 @@
 #include "gemv.h"
 
 #include <chrono>
+#include <cstdlib>
+#include <cstring>
 
 #include "amx.h"
 #include "utils.h"
@@ -228,21 +230,24 @@ void gemv_optim(const int M, const int N, const BF16* A, const BF16* x,
     default_config.colsb[7] = 4;
   }
   int i, j;
+  int tile_size = 16 * 32;
+  BF16* A_pointer = const_cast<BF16*>(A);
   _tile_loadconfig(&default_config);
   for (i = 0; i <= M - 16 * 2; i += 16 * 2) {
     _tile_loadd(0, y + i, sizeof(FP32));
     _tile_loadd(1, y + i + 16, sizeof(FP32));
     for (j = 0; j <= N - 32 * 2; j += 32 * 2) {
-      _tile_loadd(2, A + i * N + j, sizeof(BF16) * N);
-      _tile_loadd(3, A + i * N + j + 32, sizeof(BF16) * N);
-      _tile_loadd(4, A + (i + 16) * N + j, sizeof(BF16) * N);
-      _tile_loadd(5, A + (i + 16) * N + j + 32, sizeof(BF16) * N);
+      _tile_loadd(2, A_pointer + tile_size * 0, sizeof(BF16) * 32);
+      _tile_loadd(3, A_pointer + tile_size * 1, sizeof(BF16) * 32);
+      _tile_loadd(4, A_pointer + tile_size * 2, sizeof(BF16) * 32);
+      _tile_loadd(5, A_pointer + tile_size * 3, sizeof(BF16) * 32);
       _tile_loadd(6, x + j, 2 * sizeof(BF16));
       _tile_loadd(7, x + j + 32, 2 * sizeof(BF16));
       _tile_dpbf16ps(0, 2, 6);
       _tile_dpbf16ps(0, 3, 7);
       _tile_dpbf16ps(1, 4, 6);
       _tile_dpbf16ps(1, 5, 7);
+      A_pointer += tile_size * 4;
     }
     _tile_stored(0, y + i, sizeof(FP32));
     _tile_stored(1, y + i + 16, sizeof(FP32));
@@ -262,8 +267,8 @@ void example_gemv() {
 }
 
 void benchmark_gemv() {
-  int M = 1024, N = 1024;
-  int max_iter = 100;
+  int M = 10240, N = 10240;
+  int max_iter = 10000;
   BF16* A = new BF16[M * N];
   BF16* x = new BF16[N];
   FP32* y0 = new FP32[M];
@@ -274,45 +279,51 @@ void benchmark_gemv() {
   init_buffer(y0, (FP32)0, M, 1);
   init_buffer(y1, (FP32)0, M, 1);
   init_buffer(y2, (FP32)0, M, 1);
-
-  random_buffer(A, M, N);
-  random_buffer(x, N, 1);
   int ops_per_iter = M * 2 * N;
   // compute
   std::chrono::microseconds duration(0);
-  for (int i = 0; i < max_iter; i++) {
-    init_buffer(y0, (FP32)0, M, 1);
-    auto start = std::chrono::high_resolution_clock::now();
-    gemv_ref(M, N, A, x, y0);
-    auto end = std::chrono::high_resolution_clock::now();
-    duration +=
-        std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-  }
-  std::cout << "Reference version: " << duration.count() / (double)max_iter
+  // for (int i = 0; i < max_iter; i++) {
+  //   init_buffer(y0, (FP32)0, M, 1);
+  //   auto start = std::chrono::high_resolution_clock::now();
+  //   gemv_ref(M, N, A, x, y0);
+  //   auto end = std::chrono::high_resolution_clock::now();
+  //   duration +=
+  //       std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  // }
+  // std::cout << "Reference version: " << duration.count() / (double)max_iter
+  //           << " us" << std::endl;
+  // std::cout << "Throughput: "
+  //           << ops_per_iter / (duration.count() / (double)max_iter) / 1e6
+  //           << " TFLOPS" << std::endl;
+  // duration = std::chrono::microseconds(0);
+
+  // for (int i = 0; i < max_iter; i++) {
+  //   init_buffer(y1, (FP32)0, M, 1);
+  //   auto start = std::chrono::high_resolution_clock::now();
+  //   gemv_naive(M, N, A, x, y1);
+  //   auto end = std::chrono::high_resolution_clock::now();
+  //   duration +=
+  //       std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  // }
+  // std::cout << "Naive version: " << duration.count() / (double)max_iter << "
+  // us"
+  //           << std::endl;
+  // std::cout << "Throughput: "
+  //           << ops_per_iter / (duration.count() / (double)max_iter) / 1e6
+  //           << " TFLOPS" << std::endl;
+  // compare_buffer_max(y0, y1, M, 1, 10)
+  //     ? std::cout << "Correctness: True" << std::endl
+  //     : std::cout << "Correctness: False" << std::endl;
+
+  duration = std::chrono::microseconds(0);
+  auto start_reorder = std::chrono::high_resolution_clock::now();
+  reorder_matrix(A, M, N, 16, 32);
+  auto end_reorder = std::chrono::high_resolution_clock::now();
+  std::cout << "Reorder time: "
+            << std::chrono::duration_cast<std::chrono::microseconds>(
+                   end_reorder - start_reorder)
+                   .count()
             << " us" << std::endl;
-  std::cout << "Throughput: "
-            << ops_per_iter / (duration.count() / (double)max_iter) / 1e6
-            << "TOPS" << std::endl;
-  duration = std::chrono::microseconds(0);
-
-  for (int i = 0; i < max_iter; i++) {
-    init_buffer(y1, (FP32)0, M, 1);
-    auto start = std::chrono::high_resolution_clock::now();
-    gemv_naive(M, N, A, x, y1);
-    auto end = std::chrono::high_resolution_clock::now();
-    duration +=
-        std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-  }
-  std::cout << "Naive version: " << duration.count() / (double)max_iter << " us"
-            << std::endl;
-  std::cout << "Throughput: "
-            << ops_per_iter / (duration.count() / (double)max_iter) / 1e6
-            << "TOPS" << std::endl;
-  compare_buffer_max(y0, y1, M, 1, 10)
-      ? std::cout << "Correctness: True" << std::endl
-      : std::cout << "Correctness: False" << std::endl;
-
-  duration = std::chrono::microseconds(0);
   for (int i = 0; i < max_iter; i++) {
     init_buffer(y1, (FP32)0, M, 1);
     auto start = std::chrono::high_resolution_clock::now();
@@ -325,8 +336,35 @@ void benchmark_gemv() {
             << " us" << std::endl;
   std::cout << "Throughput: "
             << ops_per_iter / (duration.count() / (double)max_iter) / 1e6
-            << "TOPS" << std::endl;
+            << " TFLOPS" << std::endl;
   compare_buffer_max(y0, y1, M, 1, 10)
       ? std::cout << "Correctness: True" << std::endl
       : std::cout << "Correctness: False" << std::endl;
+}
+
+void reorder_matrix(BF16* A, const int row, const int col, const int tile_row,
+                    const int tile_col) {
+  BF16* A_copy = new BF16[row * col];
+  memcpy(A_copy, A, sizeof(BF16) * row * col);
+  const int tile_size = tile_row * tile_col;
+  const int tile_row_num = row / tile_row;
+  const int tile_col_num = col / tile_col;
+  int target_offset = 0;
+  for (int i = 0; i < tile_row_num; i += 2) {
+    for (int j = 0; j < tile_col_num; j += 2) {
+      for (int block_i = 0; block_i < 2; block_i++) {
+        for (int block_j = 0; block_j < 2; block_j++) {
+          int origin_offset =
+              (i + block_i) * tile_row * col + (j + block_j) * tile_col;
+          for (int ii = 0; ii < tile_row; ii++) {
+            for (int jj = 0; jj < tile_col; jj++) {
+              A[target_offset + ii * tile_col + jj] =
+                  A_copy[origin_offset + ii * col + jj];
+            }
+          }
+          target_offset += tile_size;
+        }
+      }
+    }
+  }
 }

@@ -13,3 +13,6 @@ void gemv_ref(const int M, const int N, const BF16* A, const BF16* x, FP32* y);
 void example_gemv();
 
 void benchmark_gemv();
+
+void reorder_matrix(BF16* A, const int row, const int col, const int tile_row,
+                    const int tile_col);

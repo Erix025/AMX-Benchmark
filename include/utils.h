@@ -78,3 +78,12 @@ bool compare_buffer_max(T *buf1, T *buf2, int32_t rows, int32_t cols,
   std::cout << "max norm: " << max_norm << std::endl;
   return max_norm < tol;
 }
+
+template <typename T>
+void range_buffer(T *buf, int32_t rows, int32_t cols) {
+  int i, j, value = 0;
+  for (i = 0; i < rows; i++)
+    for (j = 0; j < cols; j++) {
+      buf[i * cols + j] = value++;
+    }
+}

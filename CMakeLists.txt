@@ -17,4 +17,4 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 # 添加头文件搜索路径
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 # target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
-target_compile_options(${PROJECT_NAME} PRIVATE -march=native -fno-strict-aliasing)
+target_compile_options(${PROJECT_NAME} PRIVATE -O3 -g -march=native -fno-strict-aliasing)

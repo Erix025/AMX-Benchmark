@@ -3,3 +3,5 @@ build/
 perf.data
 perf.data.old
 *.out
+vtune*
+*.log
