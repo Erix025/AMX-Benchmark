@@ -1,7 +1,7 @@
 #include <chrono>
 
 #include "amx.h"
-#include "utils.cpp"
+#include "utils.h"
 
 void tmul_benchmark_int8_uu() {
   UINT8 src1[1024];

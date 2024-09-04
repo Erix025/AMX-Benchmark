@@ -5,7 +5,7 @@
 #include "examples.h"
 #include "gemv.h"
 #include "sched.h"
-#include "utils.cpp"
+#include "utils.h"
 int main() {
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);    // 清除CPU集合
@@ -21,7 +21,7 @@ int main() {
   }
 
   std::cout << "Thread is bound to CPU core 0" << std::endl;
-  benchmark_all();
-  // benchmark_gemv();
+  // benchmark_all();
+  benchmark_gemv();
   return 0;
 }

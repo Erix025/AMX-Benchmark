@@ -1,5 +1,5 @@
 #include "amx.h"
-#include "utils.cpp"
+#include "utils.h"
 void tmul_fp16() {
   FP16 src1[1024 / 2];
   FP16 src2[1024 / 2];
@@ -44,7 +44,7 @@ void tmul_fp16() {
   _tile_loadd(0, res, N * 4);
 
   // Compute dot-product of bytes in tiles
-  _tile_dpfp16ps(0, 1, 2);
+  // _tile_dpfp16ps(0, 1, 2);
 
   // Store the tile data to memory
   _tile_stored(0, res, N * 4);

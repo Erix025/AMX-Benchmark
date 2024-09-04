@@ -1,5 +1,5 @@
 #include "amx.h"
-#include "utils.cpp"
+#include "utils.h"
 void tmul_int8_uu() {
   UINT8 src1[1024];
   UINT8 src2[1024];

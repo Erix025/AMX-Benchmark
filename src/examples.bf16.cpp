@@ -1,5 +1,5 @@
 #include "amx.h"
-#include "utils.cpp"
+#include "utils.h"
 void tmul_bf16() {
   BF16 src1[1024 / 2];
   BF16 src2[1024 / 2];

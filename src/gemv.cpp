@@ -3,7 +3,7 @@
 #include <chrono>
 
 #include "amx.h"
-#include "utils.cpp"
+#include "utils.h"
 void gemv() {
   BF16 A[16 * 32];
   BF16 x[32];
@@ -185,10 +185,9 @@ void gemv_tile(BF16* A, BF16* x, FP32* y) {
 }
 
 void gemv_ref(const int M, const int N, const BF16* A, const BF16* x, FP32* y) {
-  int i, j;
-  for (i = 0; i < M; i++) {
+  for (int i = 0; i < M; i++) {
     FP32 sum = 0.0f;
-    for (j = 0; j < N; j++) {
+    for (int j = 0; j < N; j++) {
       sum += A[i * N + j] * x[j];
     }
     y[i] = sum;
@@ -276,12 +275,12 @@ void benchmark_gemv() {
   init_buffer(y1, (FP32)0, M, 1);
   init_buffer(y2, (FP32)0, M, 1);
 
+  random_buffer(A, M, N);
+  random_buffer(x, N, 1);
   int ops_per_iter = M * 2 * N;
   // compute
   std::chrono::microseconds duration(0);
   for (int i = 0; i < max_iter; i++) {
-    random_buffer(A, M, N);
-    random_buffer(x, N, 1);
     init_buffer(y0, (FP32)0, M, 1);
     auto start = std::chrono::high_resolution_clock::now();
     gemv_ref(M, N, A, x, y0);
@@ -295,9 +294,8 @@ void benchmark_gemv() {
             << ops_per_iter / (duration.count() / (double)max_iter) / 1e6
             << "TOPS" << std::endl;
   duration = std::chrono::microseconds(0);
+
   for (int i = 0; i < max_iter; i++) {
-    random_buffer(A, M, N);
-    random_buffer(x, N, 1);
     init_buffer(y1, (FP32)0, M, 1);
     auto start = std::chrono::high_resolution_clock::now();
     gemv_naive(M, N, A, x, y1);
@@ -310,13 +308,15 @@ void benchmark_gemv() {
   std::cout << "Throughput: "
             << ops_per_iter / (duration.count() / (double)max_iter) / 1e6
             << "TOPS" << std::endl;
+  compare_buffer_max(y0, y1, M, 1, 10)
+      ? std::cout << "Correctness: True" << std::endl
+      : std::cout << "Correctness: False" << std::endl;
+
   duration = std::chrono::microseconds(0);
   for (int i = 0; i < max_iter; i++) {
-    random_buffer(A, M, N);
-    random_buffer(x, N, 1);
     init_buffer(y1, (FP32)0, M, 1);
     auto start = std::chrono::high_resolution_clock::now();
-    gemv_naive(M, N, A, x, y1);
+    gemv_optim(M, N, A, x, y1);
     auto end = std::chrono::high_resolution_clock::now();
     duration +=
         std::chrono::duration_cast<std::chrono::microseconds>(end - start);
@@ -326,4 +326,7 @@ void benchmark_gemv() {
   std::cout << "Throughput: "
             << ops_per_iter / (duration.count() / (double)max_iter) / 1e6
             << "TOPS" << std::endl;
+  compare_buffer_max(y0, y1, M, 1, 10)
+      ? std::cout << "Correctness: True" << std::endl
+      : std::cout << "Correctness: False" << std::endl;
 }
