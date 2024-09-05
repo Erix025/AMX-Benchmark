@@ -9,7 +9,7 @@ set(CMAKE_CXX_COMPILER icpx)
 # find_package(OpenMP REQUIRED)
 
 # 添加源文件
-file(GLOB SOURCES "src/*.cpp")
+file(GLOB SOURCES "src/*.cpp" "src/gemv/*.cpp")
 
 # 添加可执行文件
 add_executable(${PROJECT_NAME} ${SOURCES})

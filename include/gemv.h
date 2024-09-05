@@ -1,18 +1,21 @@
 #include "amx.h"
-void gemv();
 
-void gemv_tile(BF16* A, BF16* x, FP32* y);
-
-void gemv_naive(const int M, const int N, const BF16* A, const BF16* x,
-                FP32* y);
-void gemv_optim(const int M, const int N, const BF16* A, const BF16* x,
-                FP32* y);
+// implementations of GEMV
 
 void gemv_ref(const int M, const int N, const BF16* A, const BF16* x, FP32* y);
 
-void example_gemv();
+void gemv_naive(const int M, const int N, const BF16* A, const BF16* x,
+                FP32* y);
 
-void benchmark_gemv();
+void gemv_reordered(const int M, const int N, const BF16* A, const BF16* x,
+                    FP32* y);
 
-void reorder_matrix(BF16* A, const int row, const int col, const int tile_row,
-                    const int tile_col);
+void multithread_gemv(const int num_threads, const int M, const int N,
+                      const BF16* A, const BF16* x, FP32* y);
+
+void benchmark_gemv(const int M, const int N, const int max_iter);
+
+// utils for benchmark GEMV
+void print_result(const std::string& name,
+                  const std::chrono::microseconds duration, const int max_iter,
+                  const int ops_per_iter);

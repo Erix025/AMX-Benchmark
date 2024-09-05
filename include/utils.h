@@ -1,6 +1,8 @@
+#include <chrono>
 #include <cstdint>
 #include <iostream>
 #include <random>
+#include <vector>
 
 #include "amx.h"
 
@@ -86,4 +88,24 @@ void range_buffer(T *buf, int32_t rows, int32_t cols) {
     for (j = 0; j < cols; j++) {
       buf[i * cols + j] = value++;
     }
+}
+
+void bind_core(const int num_threads);
+void bind_core(const std::vector<int> &thread_list);
+
+void reorder_matrix(BF16 *A, const int row, const int col, const int tile_row,
+                    const int tile_col);
+
+template <typename Duration = std::chrono::microseconds, typename Func,
+          typename... Args>
+Duration measure_time(const uint iter, Func &&func, Args &&...args) {
+  auto start = std::chrono::high_resolution_clock::now();
+  for (uint i = 0; i < iter; i++) {
+    // call the function with the arguments
+    std::forward<Func>(func)(std::forward<Args>(args)...);
+  }
+  auto end = std::chrono::high_resolution_clock::now();
+  // print time
+  Duration duration = std::chrono::duration_cast<Duration>(end - start) / iter;
+  return duration;
 }

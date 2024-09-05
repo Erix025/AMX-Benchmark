@@ -1,6 +1,7 @@
-# vtune -collect performance-snapshot -result-dir ./vtune ./build/AMX-Benchmark
+rm -rf ./vtune
+vtune -collect performance-snapshot -result-dir ./vtune ./build/AMX-Benchmark > vtune.log
 # rm -rf ./vtune-ht
 # vtune -collect hotspots -result-dir ./vtune-ht ./build/AMX-Benchmark
 
-rm -rf ./vtune-mem
-vtune -collect memory-access -result-dir ./vtune-mem ./build/AMX-Benchmark
+# rm -rf ./vtune-mem
+# vtune -collect memory-access -result-dir ./vtune-mem ./build/AMX-Benchmark > vtune-mem.log
