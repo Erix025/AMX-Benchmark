@@ -35,6 +35,11 @@ void gemv_reordered(const int M, const int N, const BF16* A, const BF16* x,
   }
   int i, j;
   int tile_size = 16 * 32;
+  // fetch x into cache
+  size_t x_dist = 64 / sizeof(BF16) * 2;
+  size_t y_dist = 64 / sizeof(FP32) * 2;
+  size_t A_dist = 64 / sizeof(BF16) * 64;
+
   BF16* A_pointer = const_cast<BF16*>(A);
   _tile_loadconfig(&default_config);
   for (i = 0; i <= M - 16 * 2; i += 16 * 2) {
@@ -52,8 +57,17 @@ void gemv_reordered(const int M, const int N, const BF16* A, const BF16* x,
       _tile_dpbf16ps(1, 4, 6);
       _tile_dpbf16ps(1, 5, 7);
       A_pointer += tile_size * 4;
+      for (int k = 0; k < 32 * 2; k += 64 / sizeof(BF16)) {
+        _mm_prefetch((const char*)(x + j + 64 + x_dist + k), _MM_HINT_ET0);
+      }
+      for (int k = 0; k < tile_size * 4; k += 64 / sizeof(BF16)) {
+        _mm_prefetch((const char*)(A_pointer + A_dist + k), _MM_HINT_T0);
+      }
     }
     _tile_stored(0, y + i, sizeof(FP32));
     _tile_stored(1, y + i + 16, sizeof(FP32));
+    for (int k = 0; k < 16 * 2; k += 64 / sizeof(FP32)) {
+      _mm_prefetch((const char*)(y + i + 32 + y_dist + k), _MM_HINT_T0);
+    }
   }
 }

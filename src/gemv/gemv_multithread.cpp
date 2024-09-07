@@ -23,6 +23,7 @@ void multithread_gemv(const int num_threads, const int M, const int N,
       _thread_gemv(local_M, N, local_A, x, local_y);
       continue;
     }
+    // printf("Thread %d: M=%d, N=%d\n", i, local_M, N);
     auto thread = std::thread(_thread_gemv, local_M, N, local_A, x, local_y);
     threads.push_back(std::move(thread));
   }

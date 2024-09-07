@@ -7,7 +7,7 @@
 #include "sched.h"
 #include "utils.h"
 int main() {
-  int M = 10240 * 4, N = 10240;
-  benchmark_gemv(M, N, 100);
+  size_t M = 1024 * 96, N = 10240;
+  benchmark_gemv(M, N, 1000);
   return 0;
 }

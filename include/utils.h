@@ -109,3 +109,24 @@ Duration measure_time(const uint iter, Func &&func, Args &&...args) {
   Duration duration = std::chrono::duration_cast<Duration>(end - start) / iter;
   return duration;
 }
+
+template <typename Duration = std::chrono::microseconds, typename Func,
+          typename PreFunc, typename... Args>
+Duration measure_time_with_preprocess(const uint iter, Func &&func,
+                                      PreFunc &&pre_func, Args &&...args) {
+  Duration duration(0);
+  for (uint i = 0; i < iter; i++) {
+    std::forward<PreFunc>(pre_func)(std::forward<Args>(args)...);
+    // call the function with the arguments
+    auto start = std::chrono::high_resolution_clock::now();
+    std::forward<Func>(func)(std::forward<Args>(args)...);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto _duration = std::chrono::duration_cast<Duration>(end - start);
+    std::cout << "iter " << i << ": " << _duration.count() << " us"
+              << std::endl;
+    duration += _duration;
+  }
+  // print time
+  duration /= iter;
+  return duration;
+}
