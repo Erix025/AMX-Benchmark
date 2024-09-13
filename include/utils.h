@@ -106,7 +106,7 @@ Duration measure_time(const uint iter, Func &&func, Args &&...args) {
   }
   auto end = std::chrono::high_resolution_clock::now();
   // print time
-  Duration duration = std::chrono::duration_cast<Duration>(end - start) / iter;
+  Duration duration = std::chrono::duration_cast<Duration>(end - start);
   return duration;
 }
 
@@ -122,11 +122,10 @@ Duration measure_time_with_preprocess(const uint iter, Func &&func,
     std::forward<Func>(func)(std::forward<Args>(args)...);
     auto end = std::chrono::high_resolution_clock::now();
     auto _duration = std::chrono::duration_cast<Duration>(end - start);
-    std::cout << "iter " << i << ": " << _duration.count() << " us"
-              << std::endl;
+    // std::cout << "iter " << i << ": " << _duration.count() << " us"
+    //           << std::endl;
     duration += _duration;
   }
   // print time
-  duration /= iter;
   return duration;
 }

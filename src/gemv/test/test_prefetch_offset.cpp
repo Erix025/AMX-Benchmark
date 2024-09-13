@@ -1,14 +1,10 @@
 #include "amx.h"
+#include "gemv.h"
 #include "utils.h"
-/**
- * GEMV with prefetching, based on the reordered version.
- */
-constexpr size_t x_dist = 64;        // 64 / sizeof(BF16) * 3;
-constexpr size_t y_dist = 64;        // 64 / sizeof(FP32) * 3;
-constexpr size_t A_dist = 1024 * 5;  // tile_size * sizeof(BF16) * 1;
 
-void gemv_prefetch(const int M, const int N, const BF16* A, const BF16* x,
-                   FP32* y) {
+void _gemv_prefetch(const int M, const int N, const BF16* A, const BF16* x,
+                    FP32* y, const size_t x_dist, const size_t y_dist,
+                    const size_t A_dist) {
   // enable amx
   if (!enable_amx()) exit(-1);
   // init default config
@@ -38,8 +34,6 @@ void gemv_prefetch(const int M, const int N, const BF16* A, const BF16* x,
   }
   int i, j;
   int tile_size = 16 * 32;
-  // fetch x into cache
-
   // prefetch x
   for (int k = 0; k < x_dist; k += 64 / sizeof(BF16)) {
     _mm_prefetch((const char*)(x + k), _MM_HINT_T0);
@@ -78,5 +72,26 @@ void gemv_prefetch(const int M, const int N, const BF16* A, const BF16* x,
     for (int k = 0; k < 16 * 2; k += 64 / sizeof(FP32)) {
       _mm_prefetch((const char*)(y + i + 32 + y_dist + k), _MM_HINT_T0);
     }
+  }
+}
+
+void test_gemv_prefetch_offset(const int M, const int N) {
+  BF16* A = new BF16[M * N];
+  BF16* x = new BF16[N];
+  FP32* y = new FP32[M];
+  bind_core(1);
+
+  // benchmark for prefetch version
+  size_t x_dist = 32 * sizeof(BF16) * 1;
+  size_t y_dist = 16 * sizeof(FP32) * 1;
+  for (int i = 0; i < 16; i++) {
+    size_t A_dist = 16 * 32 * sizeof(BF16) * i;
+    random_buffer(A, M, N);
+    random_buffer(x, N, 1);
+    init_buffer(y, (FP32)0, M, 1);  // y0 is the reference
+    auto duration = measure_time<std::chrono::microseconds>(
+        1024, _gemv_prefetch, M, N, A, x, y, x_dist, y_dist, A_dist);
+    std::cout << "A_dist: " << A_dist << std::endl;
+    print_result("Prefetch version", 1024, duration, M * 2 * N);
   }
 }
