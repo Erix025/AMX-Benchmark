@@ -10,6 +10,9 @@ void gemv_naive(const int M, const int N, const BF16* A, const BF16* x,
 void gemv_reordered(const int M, const int N, const BF16* A, const BF16* x,
                     FP32* y);
 
+void gemv_prefetch(const int M, const int N, const BF16* A, const BF16* x,
+                   FP32* y);
+
 void multithread_gemv(const int num_threads, const int M, const int N,
                       const BF16* A, const BF16* x, FP32* y);
 
