@@ -30,3 +30,5 @@ void print_result(const std::string& name, const size_t iters,
 
 // test
 void test_gemv_prefetch_offset(const int M, const int N);
+
+void test_multithreads(const int M, const int N);

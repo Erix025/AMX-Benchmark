@@ -10,7 +10,7 @@
 #define ENABLE_NAIVE 0
 #define ENABLE_REORDERED 0
 #define ENABLE_PREFETCH 1
-#define ENABLE_MULTITHREAD 0
+#define ENABLE_MULTITHREAD 1
 
 void print_result(const std::string& name, const size_t iters,
                   const std::chrono::microseconds duration,
@@ -25,6 +25,11 @@ void _init_benchmark(size_t M, size_t N, BF16* A, BF16* x, FP32* y) {
   random_buffer(A, M, N);
   random_buffer(x, N, 1);
   init_buffer(y, (FP32)0, M, 1);  // y0 is the reference
+}
+
+void _init_benchmark_multithreads(int num_threads, size_t M, size_t N, BF16* A,
+                                  BF16* x, FP32* y) {
+  _init_benchmark(M, N, A, x, y);
 }
 
 void benchmark_gemv(size_t M, size_t N, int max_iter) {
@@ -86,7 +91,7 @@ void benchmark_gemv(size_t M, size_t N, int max_iter) {
 #endif
 #if ENABLE_MULTITHREAD
   // benchmark for multithread version
-  int num_threads = 96;
+  int num_threads = 4;
   init_buffer(y1, (FP32)0, M, 1);
   bind_core(num_threads);
   duration = measure_time<std::chrono::microseconds>(
@@ -159,11 +164,12 @@ void benchmark_gemv_with_preprocess(size_t M, size_t N, int max_iter) {
 #endif
 #if ENABLE_MULTITHREAD
   // benchmark for multithread version
-  int num_threads = 96;
+  int num_threads = 4;
   init_buffer(y1, (FP32)0, M, 1);
   bind_core(num_threads);
-  duration = measure_time<std::chrono::microseconds>(
-      max_iter, multithread_gemv, num_threads, M, N, A, x, y1);
+  duration = measure_time_with_preprocess<std::chrono::microseconds>(
+      max_iter, multithread_gemv, _init_benchmark_multithreads, num_threads, M,
+      N, A, x, y1);
   print_result("Multithread version", max_iter, duration, ops_per_iter);
   // compare_buffer_max(y0, y1, M, 1, 10)
   //     ? std::cout << "Correctness: True" << std::endl
