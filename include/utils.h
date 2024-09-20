@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <random>
 #include <vector>
@@ -129,3 +130,7 @@ Duration measure_time_with_preprocess(const uint iter, Func &&func,
   // print time
   return duration;
 }
+
+namespace gemm {
+void reorder_matrix_into_tile(BF16 *A, const int row, const int col);
+}  // namespace gemm
