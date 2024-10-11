@@ -133,4 +133,6 @@ Duration measure_time_with_preprocess(const uint iter, Func &&func,
 
 namespace gemm {
 void reorder_matrix_into_tile(BF16 *A, const int row, const int col);
+void pack_matrix_A(const size_t M, const size_t K, BF16 *A);
+void pack_matrix_B(const size_t M, const size_t N, BF16 *B);
 }  // namespace gemm

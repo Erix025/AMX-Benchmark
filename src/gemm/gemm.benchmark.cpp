@@ -7,11 +7,11 @@
 #include "amx.h"
 #include "utils.h"
 
-#define ENABLE_REF 1
+#define ENABLE_REF 0
 #define ENABLE_NAIVE 1
-#define ENABLE_REORDERED 0
+#define ENABLE_REORDERED 1
 #define ENABLE_PREFETCH 0
-#define ENABLE_MULTITHREAD 0
+#define ENABLE_MULTITHREAD 1
 
 namespace gemm {
 
@@ -52,9 +52,12 @@ void benchmark(const size_t M, const size_t K, const size_t N, int max_iter) {
 #if ENABLE_NAIVE
   // benchmark for naive version
   init_buffer(C1, (FP32)0, M, N);
-  gemm::reorder_matrix_into_tile(B, K, N);
+  // copy B to B_copy
+  BF16* B1 = new BF16[K * N];
+  std::memcpy(B1, B, K * N * sizeof(BF16));
+  gemm::reorder_matrix_into_tile(B1, K, N);
   duration = measure_time<std::chrono::microseconds>(max_iter, gemm::baseline,
-                                                     M, K, N, A, B, C1);
+                                                     M, K, N, A, B1, C1);
   print_result("Naive version", max_iter, duration, ops_per_iter);
   compare_buffer_max(C0, C1, M, N, 10)
       ? std::cout << "Correctness: True" << std::endl
@@ -65,10 +68,34 @@ void benchmark(const size_t M, const size_t K, const size_t N, int max_iter) {
   // std::cout << "Reorder matrix: " << reorder_duration.count() << " us"
   //           << std::endl;
 #if ENABLE_REORDERED
+  // benchmark for reordered version
+  init_buffer(C1, (FP32)0, M, N);
+  pack_matrix_A(M, K, A);
+  pack_matrix_B(K, N, B);
+  duration = measure_time<std::chrono::microseconds>(max_iter, gemm::reordered,
+                                                     M, K, N, A, B, C1);
+  print_result("Reordered version", max_iter, duration, ops_per_iter);
+  compare_buffer_max(C0, C1, M, N, 10)
+      ? std::cout << "Correctness: True" << std::endl
+      : std::cout << "Correctness: False" << std::endl;
+
 #endif
 #if ENABLE_PREFETCH
 #endif
 #if ENABLE_MULTITHREAD
+  // benchmark for multithread version
+  init_buffer(C1, (FP32)0, M, N);
+  int thread_row = 8;
+  int thread_col = 8;
+
+  bind_core(thread_row * thread_col);
+  duration = measure_time<std::chrono::microseconds>(
+      max_iter, gemm::multithread, M, K, N, A, B, C1, thread_row, thread_col);
+  print_result("Multithread version", max_iter, duration, ops_per_iter);
+
+  compare_buffer_max(C0, C1, M, N, 10)
+      ? std::cout << "Correctness: True" << std::endl
+      : std::cout << "Correctness: False" << std::endl;
 #endif
   delete[] A;
   delete[] B;

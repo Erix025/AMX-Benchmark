@@ -27,8 +27,6 @@ void baseline(const int M, const int K, const int N, const BF16* A,
   const int tile_stride = 4 / sizeof(BF16);
   const int tile_col_bf16 = 64 / sizeof(BF16);
   const int tile_col_fp32 = 64 / sizeof(FP32);
-
-  int reordered_K = K / 2;
   int reordered_N = N * 2;
 
   _tile_loadconfig(&default_config);
