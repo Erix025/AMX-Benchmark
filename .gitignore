@@ -5,3 +5,4 @@ perf.data.old
 *.out
 vtune*
 *.log
+profile/

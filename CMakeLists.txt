@@ -1,24 +1,18 @@
 cmake_minimum_required(VERSION 3.12)
-project(AMX-Benchmark)
+project(AMXBench)
+
+include_directories(include)
 
 set(CMAKE_CXX_STANDARD 23)
 
-set(CMAKE_C_COMPILER icx)
-set(CMAKE_CXX_COMPILER icpx)
+# set(CMAKE_C_COMPILER /opt/intel/oneapi/compiler/2024.2/bin/icx)
+# set(CMAKE_CXX_COMPILER /opt/intel/oneapi/compiler/2024.2/bin/icpx)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# 添加源文件
-file(GLOB SOURCES "src/*.cpp" "src/gemv/*.cpp" "src/gemv/test/*.cpp" "src/gemm/*.cpp")
-
-# 添加可执行文件
-add_executable(${PROJECT_NAME} ${SOURCES})
-
-# 添加头文件搜索路径
-target_include_directories(${PROJECT_NAME} PRIVATE include)
-
-# 设置调试选项
-option(DEBUG "Enable debug mode" OFF)
-if(DEBUG)
-    target_compile_options(${PROJECT_NAME} PRIVATE -g -O0 -march=native -fno-strict-aliasing -qmkl=parallel)
-else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Ofast -march=native -fno-strict-aliasing -qmkl=parallel)
-endif()
+add_compile_options(-Ofast -march=native)
+add_subdirectory(src/amx)
+add_subdirectory(src/common)
+add_subdirectory(src/benchmark)
+add_subdirectory(src/gemm)

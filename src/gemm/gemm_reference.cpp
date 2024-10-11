@@ -1,6 +1,7 @@
 #include "amx.h"
 #include "utils.h"
 
+namespace AMXBench {
 namespace gemm {
 
 /// @brief Reference implementation of GEMM.
@@ -13,13 +14,14 @@ namespace gemm {
 
 void reference(const int M, const int K, const int N, const BF16* A,
                const BF16* B, FP32* C) {
-  for (int i = 0; i < M; i++) {
-    for (int j = 0; j < N; j++) {
-      C[i * N + j] = 0;
-      for (int k = 0; k < K; k++) {
-        C[i * N + j] += (FP32)A[i * K + k] * (FP32)B[k * N + j];
-      }
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            C[i * N + j] = 0;
+            for (int k = 0; k < K; k++) {
+                C[i * N + j] += (FP32)A[i * K + k] * (FP32)B[k * N + j];
+            }
+        }
     }
-  }
 }
 }  // namespace gemm
+}  // namespace AMXBench
